@@ -82,7 +82,7 @@ services:
       MYSQL_PASSWORD: root_password
       MYSQL_DATABASE: stock_data
       MONGO_URI: mongodb://mongodb:27017/stock_news_db
-      GEMINI_KEY: "AIzaSyAQGnVDL9PjTSK5pEcwtVbPKARcFI2qFyI"
+      GEMINI_KEY: ""
     command: "uvicorn fastapi_app:app --host 0.0.0.0 --port 8000"
     networks:
       - stock_network
