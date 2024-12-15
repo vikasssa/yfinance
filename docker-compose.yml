@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_stock_data
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: stock_data
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - stock_network
+
+  stock-fetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.stock_fetcher
+    container_name: stock_fetcher
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root_password
+      MYSQL_DATABASE: stock_data
+      TICKERS: "AAPL,MSFT" # List of tickers to fetch news for
+      MODE: "schedule" # "once", "schedule"
+      OUTPUT: "db" # "db","CSV"
+    networks:
+      - stock_network
+    command: /bin/bash -c "python stock_fetcher.py"
+
+  stock-news-fetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.stock_news_fetcher
+    container_name: stock_news_fetcher
+    depends_on:
+      - mongodb
+      - splash
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/stock_news_db  # MongoDB URI to connect
+      TICKERS: "AAPL,MSFT"  # List of tickers to fetch news for
+      MODE: "schedule"  # "once" or "schedule"
+      SPLASH_URL: http://splash:8050  # Splash service URL
+    networks:
+      - stock_network
+    command: python stock_news_fetcher.py  # Run the stock-news-fetcher script
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_DATABASE: stock_news_db
+    command: ["--noauth"]
+    ports:
+      - "27017:27017"
+    networks:
+      - stock_network
+    volumes:
+      - mongodb_data:/data/db  # Persistent volume for MongoDB data
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: fastapi_service
+    depends_on:
+      - mysql
+      - stock-fetcher
+      - mongodb
+      - stock-news-fetcher
+    ports:
+      - "8000:8000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root_password
+      MYSQL_DATABASE: stock_data
+      MONGO_URI: mongodb://mongodb:27017/stock_news_db
+      GEMINI_KEY: "AIzaSyAQGnVDL9PjTSK5pEcwtVbPKARcFI2qFyI"
+    command: "uvicorn fastapi_app:app --host 0.0.0.0 --port 8000"
+    networks:
+      - stock_network
+
+  splash:
+    image: scrapinghub/splash
+    container_name: splash
+    ports:
+      - "8050:8050"
+    networks:
+      - stock_network
+    environment:
+      SPLASH_MAX_TIMEOUT: 3600  # Set max timeout for rendering requests
+    command: ["--max-timeout", "3600"]  # Adjust max timeout if necessary
+
+
+  streamlit:
+    image: python:3.12.4
+    container_name: streamlit_service
+    depends_on:
+      - fastapi
+    volumes:
+      - .:/app  # Mount root folder containing app.py and requirements.txt
+    working_dir: /app  # Set working directory to root
+    ports:
+      - "8501:8501"  # Expose Streamlit's default port
+    environment:
+      FASTAPI_URL: http://fastapi_service:8000  # Add FastAPI service URL as environment variable
+    networks:
+      - stock_network
+    command: >
+      /bin/bash -c "pip install -r requirements.txt &&
+                    streamlit run app.py --server.port 8501 --server.enableCORS false"
+
+
+networks:
+  stock_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  mongodb_data:
+    driver: local

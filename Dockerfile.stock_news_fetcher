@@ -1,0 +1,19 @@
+# Use a Python base image
+FROM python:3.12.4
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the application code into the container
+COPY . /app
+
+# Install the necessary dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Set environment variables for MongoDB connection
+ENV MONGO_URI=mongodb://mongodb:27017/stock_news_db
+ENV TICKERS="AAPL,GOOGL,MSFT"
+ENV MODE="schedule"
+
+# Command to run the stock news fetcher script
+CMD ["python", "stock_news_fetcher.py"]
