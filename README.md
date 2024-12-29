@@ -1,7 +1,6 @@
 Description:
 
-This POC implements a stock data analysis system that integrates multiple services. The mysql service stores stock data, while the stock-fetcher periodically fetches stock data based on user-defined tickers. The stock-news-fetcher scrapes relevant news articles using the splash service, storing them in MongoDB (mongodb). The FastAPI service (fastapi) serves as the central component, querying both the MySQL database for stock data and MongoDB for news, while also interacting with the Gemini language model to generate insights. A Streamlit front-end (streamlit) visualizes the stock data and insights, providing an interactive user experience
-
+This POC demonstrates a stock data analysis system where users interact with stock data and news through separate APIs. The system consists of several components: MySQL (mysql) stores stock data, while the stock-fetcher periodically fetches stock data based on user-defined tickers. The stock-news-fetcher scrapes and stores news articles in MongoDB (mongodb). The FastAPI service (fastapi) serves two distinct APIs—one for querying stock data from MySQL and another for fetching news from MongoDB. Additionally, it queries the Gemini language model to generate insights based on both the stock data and news. The Streamlit front-end (streamlit) displays textual answers and insights to the user.
 
 
 
