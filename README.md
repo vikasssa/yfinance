@@ -1,3 +1,11 @@
+Description:
+
+This POC implements a stock data analysis system that integrates multiple services. The mysql service stores stock data, while the stock-fetcher periodically fetches stock data based on user-defined tickers. The stock-news-fetcher scrapes relevant news articles using the splash service, storing them in MongoDB (mongodb). The FastAPI service (fastapi) serves as the central component, querying both the MySQL database for stock data and MongoDB for news, while also interacting with the Gemini language model to generate insights. A Streamlit front-end (streamlit) visualizes the stock data and insights, providing an interactive user experience
+
+
+
+
+
 cd yfinance/
 
 vi docker-compose.yml file
